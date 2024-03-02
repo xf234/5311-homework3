@@ -1,12 +1,3 @@
-#submitButton {
-    display: block;
-    margin: auto;
-    border: solid 3px #B7E576;
-    background-color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-}
-
 #restaurantType {
     border: 1px solid #ccc;
     padding: 5px;

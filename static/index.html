@@ -61,7 +61,6 @@
             <input type="checkbox" id="otherDistricts" name="district" value="otherDistricts">
             <label for="otherDistricts">Other Districts</label><br>
             <br>
-            <input type="submit" value="Submit" id="submitButton">
         </form>
 
         <svg id="scatterPlot" height="500" width="500" style="box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);"></svg>
@@ -96,7 +95,7 @@
             console.log(restaurantBoston);
             const restaurantsText = d3.select("#restaurantsText");
 
-            document.getElementById('restaurant-selection').addEventListener('submit', function (event) {
+            document.getElementById('restaurant-selection').addEventListener('change', function (event) {
                 remove_previous_info();
                 event.preventDefault();
                 const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
