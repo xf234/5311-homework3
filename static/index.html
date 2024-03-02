@@ -6,17 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>homework3</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-<style>
-    #submitButton {
-        display: block;
-        margin:  auto;
-        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);
-        background-color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 10px; 
-    }
-    </style>
+    <link rel="stylesheet" href="styles.css">
+
 </head>
 
 <body>
@@ -31,6 +22,7 @@
             <input type="checkbox" id="moreThan500" name="range" value="moreThan500">
             <label for="moreThan500">More than 500</label><br>
             <br>
+
             <p style="padding-top: 30px;">Choose a restaurant type</p>
             <select name="restaurantType" id="restaurantType">
                 <option value="-- --">-- --</option>
@@ -244,7 +236,7 @@
 
             const reviewExtent = d3.extent(data, d => d['review_count']);
             console.log('review extent', reviewExtent);
-            const reviewScale = d3.scaleLinear().domain(reviewExtent).range([plotHeight, 0]);
+            const reviewScale = d3.scaleLog().domain(reviewExtent).range([plotHeight, 0]);
 
             let leftAxis = d3.axisLeft(reviewScale);
             svg.append('g')
@@ -278,8 +270,9 @@
                 .join("circle")
                 .attr("cx", d => ratingScale(d['rating']) + bandwidthHalf)
                 .attr("cy", d => reviewScale(d['review_count']))
-                .attr("r", 5)
-                .style("fill", "green")
+                .attr("r", 4)
+                .style("opacity", 0.7)
+                .style("fill", "#B7E576")
                 .on("mouseover", show_details);
         }
 
