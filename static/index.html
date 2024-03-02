@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>homework3</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+    #submitButton {
+        display: block;
+        margin:  auto;
+        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);
+        background-color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 10px; 
+    }
+    </style>
+</head>
+
+<body>
+    <h2 style="padding-left: 40px; padding-bottom: 40px;">Find the restaurant you want</h2>
+    <div style="display: flex; justify-content: space-around;">
+        <form id="restaurant-selection" action="#" style="padding: 20px; box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);">
+            <p>Choose Popularity (number of reviews)</p>
+            <input type="checkbox" id="lessThan100" name="range" value="lessThan100">
+            <label for="lessThan100">Less than 100</label><br>
+            <input type="checkbox" id="100to500" name="range" value="100to500">
+            <label for="100to500">100 - 500</label><br>
+            <input type="checkbox" id="moreThan500" name="range" value="moreThan500">
+            <label for="moreThan500">More than 500</label><br>
+            <br>
+            <p style="padding-top: 30px;">Choose a restaurant type</p>
+            <select name="restaurantType" id="restaurantType">
+                <option value="-- --">-- --</option>
+                <option value="restaurants">Restaurants</option>
+                <option value="vietnamese">Vietnamese</option>
+                <option value="donuts">Donuts</option>
+                <option value="sandwiches">Sandwiches</option>
+                <option value="pizza">Pizza</option>
+                <option value="indpak">Indpak</option>
+                <option value="sushi">Sushi</option>
+                <option value="japanese">Japanese</option>
+                <option value="thai">Thai</option>
+                <option value="mexican">Mexican</option>
+                <option value="ethnicmarkets">Ethnic Markets</option>
+                <option value="newamerican">New American</option>
+                <option value="coffee">Coffee</option>
+                <option value="cafes">Cafes</option>
+                <option value="french">French</option>
+                <option value="italian">Italian</option>
+                <option value="bakeries">Bakeries</option>
+                <option value="chinese">Chinese</option>
+            </select>
+            <br><br>
+
+            <p style="padding-top: 30px;">Choose Districts</p>
+            <input type="checkbox" id="northEnd" name="district" value="North End">
+            <label for="northEnd">North End</label><br>
+            <input type="checkbox" id="southEnd" name="district" value="South End">
+            <label for="southEnd">South End</label><br>
+            <input type="checkbox" id="backBay" name="district" value="Back Bay">
+            <label for="backBay">Back Bay</label><br>
+            <input type="checkbox" id="chinatown" name="district" value="Chinatown">
+            <label for="chinatown">Chinatown</label><br>
+            <input type="checkbox" id="downtown" name="district" value="Downtown">
+            <label for="downtown">Downtown</label><br>
+            <input type="checkbox" id="otherDistricts" name="district" value="otherDistricts">
+            <label for="otherDistricts">Other Districts</label><br>
+            <br>
+            <input type="submit" value="Submit" id="submitButton">
+        </form>
+
+        <svg id="scatterPlot" height="500" width="500" style="box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);"></svg>
+
+        <div id="rstntInfo" style="width: 300px; padding: 20px;box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);">
+        </div>
+
+    </div>
+
+    <script>
+        const svg = d3.select("#scatterPlot");
+        const width = svg.attr("width");
+        const height = svg.attr("height");
+        const margin = { top: 30, right: 30, bottom: 30, left: 60 };
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const plot = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height / 2)
+            .attr("id", "restaurantsText")
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "middle")
+            .text("Choose restaurants from left")
+            .style("font-size", "20px")
+            .style("fill", "black");
+
+        const requestData = async function () {
+            const restaurantBoston = await d3.csv("data/yelp_boston_new.csv", d3.autoType);
+            console.log(restaurantBoston);
+            const restaurantsText = d3.select("#restaurantsText");
+
+            document.getElementById('restaurant-selection').addEventListener('submit', function (event) {
+                remove_previous_info();
+                event.preventDefault();
+                const checkboxes = document.querySelectorAll('input[type=checkbox]:checked');
+                const select = document.getElementById('restaurantType');
+
+                const popularity = [];
+                const districts = [];
+
+                checkboxes.forEach(function (checkbox) {
+                    if (checkbox.name === 'range') {
+                        popularity.push(checkbox.value);
+                    } else if (checkbox.name === 'district') {
+                        districts.push(checkbox.value);
+                    }
+                });
+
+                const restaurantType = select.options[select.selectedIndex].value;
+
+                const choices = {
+                    popularity: popularity,
+                    restaurantType: restaurantType,
+                    districts: districts
+                };
+
+                console.log(choices);
+                const selected_restaurants = findRestaurants(choices, restaurantBoston);
+                console.log(selected_restaurants);
+
+                if (selected_restaurants.length == 0) {
+                    restaurantsText.text("There is no qualifying restaurants");
+                } else {
+
+                    display_restaurants(selected_restaurants);
+                }
+
+
+            });
+        }
+
+        requestData();
+
+        function remove_previous_info() {
+            d3.select("#rstntInfo").html("");
+            svg.select("#restaurantsText").text("");
+
+            const ratingLabel = svg.select("#ratingText");
+            if (!ratingLabel.empty()) {
+                svg.select("#ratingText").remove();
+            }
+            const reviewsLabel = svg.select("#reviewsText");
+            if (!reviewsLabel.empty()) {
+                svg.select("#reviewsText").remove();
+            }
+
+            const xAxis = d3.select(".x.axis");
+            if (!xAxis.empty()) {
+                xAxis.remove();
+            }
+
+            const yAxis = d3.select(".y.axis");
+            if (!yAxis.empty()) {
+                yAxis.remove();
+            }
+
+            svg.selectAll("circle").remove();
+        }
+
+        function findRestaurants(choices, data) {
+            selected_restaurants = [];
+            if (choices.popularity.length == 0 | choices.districts.length == 0 | choices.restaurantType == "-- --") {
+                return [];
+            }
+
+            data.forEach(d => {
+                let qualified_popularity = check_popularity(choices.popularity, d['review_count']);
+                let qualified_type = findType(choices.restaurantType, d['search category']);
+                let qualified_district = check_district(choices.districts, d['neighborhood']);
+
+                // console.log(qualified_popularity);
+                // console.log(qualified_type, qualified_district);
+                if (qualified_popularity && qualified_type && qualified_district) {
+                    selected_restaurants.push(d);
+                }
+            });
+
+            return selected_restaurants;
+
+        }
+
+        function check_popularity(popularity, review_count) {
+            let moreThan500 = false;
+            let to500 = false;
+            let lessThan100 = false;
+
+            if (popularity.includes("moreThan500")) {
+                moreThan500 = review_count > 500;
+            }
+            if (popularity.includes("100to500")) {
+                to500 = review_count <= 500 && review_count >= 100;
+            }
+            if (popularity.includes("lessThan100")) {
+                lessThan100 = review_count < 100;
+            }
+
+            return moreThan500 || to500 || lessThan100;
+        }
+
+        function findType(type, search_category) {
+            return type === search_category
+        }
+
+        function check_district(districts, neighborhood) {
+            if (districts.includes(neighborhood)) {
+                return true;
+            } else if (districts.includes("otherDistricts")) {
+
+                if (neighborhood === "North End" |
+                    neighborhood === "South End" |
+                    neighborhood === "Back Bay" |
+                    neighborhood === "Chinatown" |
+                    neighborhood === "Downtown") {
+                    return false;
+                } else {
+                    return true;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        function display_restaurants(data) {
+            const ratingScale = d3.scaleBand()
+                .domain([3.5, 4.0, 4.5, 5.0])
+                .range([0, plotWidth])
+                .padding(0.1);
+            const bandwidthHalf = ratingScale.bandwidth() / 2;
+
+            const reviewExtent = d3.extent(data, d => d['review_count']);
+            console.log('review extent', reviewExtent);
+            const reviewScale = d3.scaleLinear().domain(reviewExtent).range([plotHeight, 0]);
+
+            let leftAxis = d3.axisLeft(reviewScale);
+            svg.append('g')
+                .attr('class', 'y axis')
+                .attr('transform', `translate(${margin.left - 10},${margin.top})`)
+                .call(leftAxis);
+
+            let bottomAxis = d3.axisBottom(ratingScale);
+            svg.append('g')
+                .attr('class', 'x axis')
+                .attr('transform', `translate(${margin.left},${plotHeight + margin.top + 10})`)
+                .call(bottomAxis);
+
+
+            svg.append('text')
+                .attr('x', width - margin.right - 10)
+                .attr('y', height - margin.bottom)
+                .text('Rating')
+                .attr('id', 'ratingText')
+                .style('font-size', '10px');
+
+
+            svg.append('text')
+                .attr('x', margin.right)
+                .attr('y', margin.top - 5)
+                .text('Reviews')
+                .attr('id', 'reviewsText')
+                .style('font-size', '10px');
+
+            let circles = plot.selectAll("circle").data(data)
+                .join("circle")
+                .attr("cx", d => ratingScale(d['rating']) + bandwidthHalf)
+                .attr("cy", d => reviewScale(d['review_count']))
+                .attr("r", 5)
+                .style("fill", "green")
+                .on("mouseover", show_details);
+        }
+
+        function show_details(event, d) {
+            d3.select("#rstntInfo").html("");
+            const info = `Restaurant: ${d.name}<br/><br/><br/>
+            Rating: ${d.rating}<br/><br/><br/>
+            Review Number: ${d.review_count}<br/><br/><br/>
+            Address: ${JSON.parse(d.location_json).address}<br/><br/><br/>
+            Neighbourhood: ${d.neighborhood ? d.neighborhood : "Unknown"}<br/><br/><br/>
+            Review: ${d.review_count}<br/><br/><br/>
+            Website: <a href= ${d.url} target="_blank">${d.url}</a> <br/>
+            `;
+
+            d3.select("#rstntInfo")
+                .html(info)
+                .style("display", "block")
+        }
+
+    </script>
+
+</body>
+
+</html>
